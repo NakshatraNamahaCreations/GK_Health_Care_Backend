@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Service Report — {{report.reportNumber}}</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f2937;margin:0;font-size:12px}
+  .hdr{border-bottom:2px solid #0f766e;padding:16px 24px;display:flex;justify-content:space-between}
+  .hdr h1{margin:0;color:#0f766e;font-size:18px}
+  .meta{text-align:right;font-size:11px;color:#6b7280}
+  .section{padding:14px 24px}
+  .section h2{font-size:13px;margin:0 0 8px;color:#0f766e;text-transform:uppercase;letter-spacing:.04em}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 16px}
+  .grid .label{color:#6b7280}
+  table{width:100%;border-collapse:collapse;margin-bottom:8px}
+  th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;vertical-align:top}
+  th{background:#f3f4f6;font-weight:600}
+  .sig{display:flex;justify-content:space-between;margin-top:24px;padding:0 24px}
+  .sig .box{width:45%;border-top:1px solid #9ca3af;padding-top:6px;text-align:center;font-size:11px;color:#374151;min-height:60px}
+  .sig img{max-height:60px;display:block;margin:0 auto 4px}
+  .footer{padding:18px 24px;font-size:10px;color:#6b7280;border-top:1px solid #e5e7eb;margin-top:18px}
+  .narrative{white-space:pre-wrap}
+</style>
+</head>
+<body>
+  <div class="hdr">
+    <div>
+      <h1>{{company.name}}</h1>
+      <div style="font-size:11px;color:#6b7280">{{company.address}}</div>
+    </div>
+    <div class="meta">
+      <div><strong>Service Report</strong></div>
+      <div>{{report.reportNumber}}</div>
+      <div>{{formatDate report.reportDate}}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Customer & Machine</h2>
+    <div class="grid">
+      <div><span class="label">Hospital:</span> {{customer.hospitalName}}</div>
+      <div><span class="label">Phone:</span> {{customer.phone}}</div>
+      <div><span class="label">Machine:</span> {{machine.machineName}} ({{machine.modelNumber}})</div>
+      <div><span class="label">Serial #:</span> {{machine.serialNumber}}</div>
+      <div><span class="label">Service Type:</span> {{report.serviceType}}</div>
+      <div><span class="label">Status After:</span> {{report.machineStatusAfterService}}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Complaint Reported</h2>
+    <div class="narrative">{{report.complaintReported}}</div>
+  </div>
+
+  <div class="section">
+    <h2>Diagnosis</h2>
+    <div class="narrative">{{report.diagnosis}}</div>
+  </div>
+
+  <div class="section">
+    <h2>Work Done</h2>
+    <div class="narrative">{{report.workDone}}</div>
+  </div>
+
+  {{#if report.sparePartsUsed.length}}
+  <div class="section">
+    <h2>Spare Parts Used</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Code</th><th>Part</th><th>Qty</th><th>Rate</th></tr>
+      </thead>
+      <tbody>
+        {{#each report.sparePartsUsed}}
+        <tr>
+          <td>{{inc @index}}</td>
+          <td>{{this.partCode}}</td>
+          <td>{{this.partName}}</td>
+          <td>{{this.quantity}}</td>
+          <td>{{currency this.rate}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
+
+  {{#if report.nextServiceDate}}
+  <div class="section">
+    <h2>Next Service Due</h2>
+    <div>{{formatDate report.nextServiceDate}}</div>
+  </div>
+  {{/if}}
+
+  {{#if report.customerRemarks}}
+  <div class="section">
+    <h2>Customer Remarks</h2>
+    <div class="narrative">{{report.customerRemarks}}</div>
+  </div>
+  {{/if}}
+
+  {{#if report.technicianRemarks}}
+  <div class="section">
+    <h2>Technician Remarks</h2>
+    <div class="narrative">{{report.technicianRemarks}}</div>
+  </div>
+  {{/if}}
+
+  <div class="sig">
+    <div class="box">
+      {{#if report.customerSignatureUrl}}<img src="{{report.customerSignatureUrl}}" />{{/if}}
+      Customer Signature
+    </div>
+    <div class="box">
+      {{#if report.technicianSignatureUrl}}<img src="{{report.technicianSignatureUrl}}" />{{/if}}
+      Technician — {{technician.name}}
+    </div>
+  </div>
+
+  <div class="footer">
+    Generated on {{formatDate generatedAt "datetime"}} — {{report.reportNumber}}
+  </div>
+</body>
+</html>

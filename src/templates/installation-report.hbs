@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Installation Report — {{report.reportNumber}}</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f2937;margin:0;font-size:12px}
+  .hdr{border-bottom:2px solid #0f766e;padding:16px 24px;display:flex;justify-content:space-between}
+  .hdr h1{margin:0;color:#0f766e;font-size:18px}
+  .meta{text-align:right;font-size:11px;color:#6b7280}
+  .section{padding:14px 24px}
+  .section h2{font-size:13px;margin:0 0 8px;color:#0f766e;text-transform:uppercase;letter-spacing:.04em}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 16px}
+  .grid .label{color:#6b7280}
+  table{width:100%;border-collapse:collapse;margin-bottom:8px}
+  th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;vertical-align:top}
+  th{background:#f3f4f6;font-weight:600}
+  .sig{display:flex;justify-content:space-between;margin-top:24px;padding:0 24px}
+  .sig .box{width:45%;border-top:1px solid #9ca3af;padding-top:6px;text-align:center;font-size:11px;color:#374151;min-height:60px}
+  .sig img{max-height:60px;display:block;margin:0 auto 4px}
+  .footer{padding:18px 24px;font-size:10px;color:#6b7280;border-top:1px solid #e5e7eb;margin-top:18px}
+</style>
+</head>
+<body>
+  <div class="hdr">
+    <div>
+      <h1>{{company.name}}</h1>
+      <div style="font-size:11px;color:#6b7280">{{company.address}}</div>
+    </div>
+    <div class="meta">
+      <div><strong>Installation Report</strong></div>
+      <div>{{report.reportNumber}}</div>
+      <div>{{formatDate report.reportDate}}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Customer</h2>
+    <div class="grid">
+      <div><span class="label">Hospital:</span> {{customer.hospitalName}}</div>
+      <div><span class="label">Code:</span> {{customer.customerCode}}</div>
+      <div><span class="label">Contact:</span> {{customer.customerName}}</div>
+      <div><span class="label">Phone:</span> {{customer.phone}}</div>
+      <div style="grid-column:1/-1"><span class="label">Address:</span> {{customer.address}}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Machine</h2>
+    <div class="grid">
+      <div><span class="label">Name:</span> {{machine.machineName}}</div>
+      <div><span class="label">Model:</span> {{machine.modelNumber}}</div>
+      <div><span class="label">Serial #:</span> {{machine.serialNumber}}</div>
+      <div><span class="label">Manufacturer:</span> {{machine.manufacturer}}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Installation Details</h2>
+    <table>
+      <tr><th>Installation Date</th><td>{{formatDate report.installationDate}}</td></tr>
+      <tr><th>Warranty Start</th><td>{{formatDate report.warrantyStartDate}}</td></tr>
+      <tr><th>Warranty End</th><td>{{formatDate report.warrantyEndDate}}</td></tr>
+      <tr><th>AMC Start</th><td>{{formatDate report.amcStartDate}}</td></tr>
+      <tr><th>AMC End</th><td>{{formatDate report.amcEndDate}}</td></tr>
+      <tr><th>Machine Status</th><td>{{report.machineStatus}}</td></tr>
+    </table>
+  </div>
+
+  {{#if report.engineerRemarks}}
+  <div class="section">
+    <h2>Engineer Remarks</h2>
+    <div>{{report.engineerRemarks}}</div>
+  </div>
+  {{/if}}
+
+  <div class="sig">
+    <div class="box">
+      {{#if report.customerSignatureUrl}}<img src="{{report.customerSignatureUrl}}" />{{/if}}
+      Customer Signature
+    </div>
+    <div class="box">
+      {{#if report.technicianSignatureUrl}}<img src="{{report.technicianSignatureUrl}}" />{{/if}}
+      Technician — {{technician.name}}
+    </div>
+  </div>
+
+  <div class="footer">
+    Generated on {{formatDate generatedAt "datetime"}} — {{report.reportNumber}}
+  </div>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Quotation — {{quotation.quotationNumber}}</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f2937;margin:0;font-size:12px}
+  .hdr{border-bottom:2px solid #0f766e;padding:16px 24px;display:flex;justify-content:space-between}
+  .hdr h1{margin:0;color:#0f766e;font-size:18px}
+  .meta{text-align:right;font-size:11px;color:#6b7280}
+  .section{padding:14px 24px}
+  .section h2{font-size:13px;margin:0 0 8px;color:#0f766e;text-transform:uppercase;letter-spacing:.04em}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 16px}
+  .grid .label{color:#6b7280}
+  table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:11px}
+  th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;vertical-align:top}
+  th{background:#f3f4f6;font-weight:600}
+  td.num,th.num{text-align:right}
+  .totals{width:55%;margin-left:auto;font-size:12px}
+  .totals td{border:none;padding:4px 8px}
+  .totals .grand{font-weight:700;border-top:2px solid #0f766e}
+  .terms{white-space:pre-wrap;font-size:11px;color:#374151}
+  .footer{padding:18px 24px;font-size:10px;color:#6b7280;border-top:1px solid #e5e7eb;margin-top:18px}
+  .status{display:inline-block;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:#e0f2fe;color:#075985}
+</style>
+</head>
+<body>
+  <div class="hdr">
+    <div>
+      <h1>{{company.name}}</h1>
+      <div style="font-size:11px;color:#6b7280">{{company.address}}</div>
+    </div>
+    <div class="meta">
+      <div><strong>Quotation</strong> <span class="status">{{quotation.status}}</span></div>
+      <div>{{quotation.quotationNumber}}</div>
+      <div>{{formatDate quotation.quotationDate}}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Customer</h2>
+    <div class="grid">
+      <div><span class="label">Hospital:</span> {{customer.hospitalName}}</div>
+      <div><span class="label">Code:</span> {{customer.customerCode}}</div>
+      <div><span class="label">Contact:</span> {{customer.customerName}}</div>
+      <div><span class="label">Phone:</span> {{customer.phone}}</div>
+      {{#if customer.email}}<div><span class="label">Email:</span> {{customer.email}}</div>{{/if}}
+      {{#if customer.gstin}}<div><span class="label">GSTIN:</span> {{customer.gstin}}</div>{{/if}}
+      <div style="grid-column:1/-1"><span class="label">Address:</span> {{customer.address}}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Items</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30px">#</th>
+          <th>Description</th>
+          <th>Type</th>
+          <th class="num">Qty</th>
+          <th class="num">Rate</th>
+          <th class="num">Disc</th>
+          <th class="num">GST %</th>
+          <th class="num">GST Amt</th>
+          <th class="num">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each quotation.items}}
+        <tr>
+          <td>{{inc @index}}</td>
+          <td>{{this.name}}</td>
+          <td>{{this.itemType}}</td>
+          <td class="num">{{this.quantity}}</td>
+          <td class="num">{{currency this.rate}}</td>
+          <td class="num">{{currency this.discount}}</td>
+          <td class="num">{{this.gstPercentage}}%</td>
+          <td class="num">{{currency this.gstAmount}}</td>
+          <td class="num">{{currency this.total}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <table class="totals">
+      <tr><td>Sub Total</td><td class="num">{{currency quotation.subTotal}}</td></tr>
+      <tr><td>GST Total</td><td class="num">{{currency quotation.gstTotal}}</td></tr>
+      <tr><td>Freight</td><td class="num">{{currency quotation.freightCharges}}</td></tr>
+      <tr class="grand"><td>Grand Total</td><td class="num">{{currency quotation.grandTotal}}</td></tr>
+    </table>
+  </div>
+
+  {{#if quotation.terms}}
+  <div class="section">
+    <h2>Terms & Conditions</h2>
+    <div class="terms">{{quotation.terms}}</div>
+  </div>
+  {{/if}}
+
+  <div class="footer">
+    Generated on {{formatDate generatedAt "datetime"}} — {{quotation.quotationNumber}}.
+    This is a system-generated quotation. Prices valid for 30 days unless stated otherwise.
+  </div>
+</body>
+</html>
