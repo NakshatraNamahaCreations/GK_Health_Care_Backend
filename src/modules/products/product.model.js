@@ -2,6 +2,14 @@ const mongoose = require('mongoose');
 const { ROLE_STATUS, ROLE_STATUS_VALUES } = require('../../constants/status');
 const { PRODUCT_TYPES } = require('../../constants/productTypes');
 
+const productPartSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    quantity: { type: Number, required: true, min: 1, default: 1 },
+  },
+  { _id: false }
+);
+
 const productSchema = new mongoose.Schema(
   {
     productCode: { type: String, required: true, unique: true, index: true },
@@ -15,6 +23,7 @@ const productSchema = new mongoose.Schema(
     gstPercentage: { type: Number, min: 0, max: 100, default: 0 },
     hsnCode: { type: String, trim: true, default: '' },
     warrantyMonths: { type: Number, min: 0, default: 0 },
+    parts: { type: [productPartSchema], default: [] },
     status: {
       type: String,
       enum: ROLE_STATUS_VALUES, // Active / Inactive

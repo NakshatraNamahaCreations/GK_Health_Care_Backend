@@ -8,10 +8,17 @@ const {
 const objectId = z.string().regex(OBJECT_ID, 'Invalid id');
 const optionalDate = z.coerce.date().optional();
 
+const itemPart = z.object({
+  name: z.string().min(1).max(200),
+  quantity: z.coerce.number().nonnegative().default(1),
+});
+
 const item = z.object({
   itemType: z.enum(QUOTATION_ITEM_TYPES),
   itemId: objectId.optional(),
   name: z.string().min(1).max(200),
+  hsnCode: z.string().max(20).optional(),
+  parts: z.array(itemPart).optional(),
   quantity: z.coerce.number().positive(),
   rate: z.coerce.number().nonnegative(),
   discount: z.coerce.number().nonnegative().optional().default(0),

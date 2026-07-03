@@ -4,11 +4,22 @@ const {
   QUOTATION_ITEM_TYPES,
 } = require('../../constants/quotationEnums');
 
+const quotationItemPartSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    quantity: { type: Number, required: true, min: 0, default: 1 },
+  },
+  { _id: false }
+);
+
 const quotationItemSchema = new mongoose.Schema(
   {
     itemType: { type: String, enum: QUOTATION_ITEM_TYPES, required: true },
     itemId: { type: mongoose.Schema.Types.ObjectId }, // loose ref — could be Product or SparePart
     name: { type: String, required: true, trim: true },
+    hsnCode: { type: String, trim: true, default: '' },
+    // Snapshot of the product's parts (BOM) at the time of quoting.
+    parts: { type: [quotationItemPartSchema], default: [] },
     quantity: { type: Number, required: true, min: 0 },
     rate: { type: Number, required: true, min: 0 },
     discount: { type: Number, default: 0, min: 0 },

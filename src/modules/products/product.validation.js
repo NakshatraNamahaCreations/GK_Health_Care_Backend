@@ -7,6 +7,11 @@ const objectId = z.string().regex(OBJECT_ID, 'Invalid id');
 const statusEnum = z.enum(ROLE_STATUS_VALUES);
 const productTypeEnum = z.enum(PRODUCT_TYPES);
 
+const partSchema = z.object({
+  name: z.string().trim().min(1, 'Part name is required').max(200),
+  quantity: z.coerce.number().int().min(1).default(1),
+});
+
 const create = z.object({
   productName: z.string().min(2).max(200),
   productType: productTypeEnum,
@@ -18,6 +23,7 @@ const create = z.object({
   gstPercentage: z.coerce.number().min(0).max(100).optional(),
   hsnCode: z.string().max(20).optional(),
   warrantyMonths: z.coerce.number().int().min(0).optional(),
+  parts: z.array(partSchema).optional(),
   status: statusEnum.optional(),
 });
 
