@@ -20,4 +20,9 @@ const incidentReportSchema = new mongoose.Schema(
 incidentReportSchema.index({ customerId: 1, customerMachineId: 1, reportDate: -1 });
 incidentReportSchema.index({ incidentDate: -1 });
 
+incidentReportSchema.index({ companyId: 1, reportNumber: 1 }, { unique: true });
+
+const { tenantPlugin } = require('../../../tenant/tenantPlugin');
+incidentReportSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('IncidentReport', incidentReportSchema);

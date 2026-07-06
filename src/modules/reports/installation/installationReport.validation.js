@@ -13,6 +13,7 @@ const optionalUrl = z
 
 const create = z.object({
   reportDate: z.coerce.date().optional(),
+  orderId: objectId.optional(),
   customerId: objectId,
   customerMachineId: objectId,
   technicianId: objectId.optional(),

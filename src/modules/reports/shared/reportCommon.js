@@ -7,8 +7,12 @@ const { REPORT_STATUSES } = require('../../../constants/reportEnums');
 
 // Common audit + denormalized header fields every report carries.
 const commonReportFields = {
-  reportNumber: { type: String, required: true, unique: true, index: true },
+  // Unique per company — the compound index is added on each report schema.
+  reportNumber: { type: String, required: true, index: true },
   reportDate: { type: Date, required: true, default: () => new Date() },
+
+  // Optional link to the order this report was created from.
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', index: true },
 
   customerId: {
     type: mongoose.Schema.Types.ObjectId,

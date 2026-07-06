@@ -12,7 +12,7 @@ const productPartSchema = new mongoose.Schema(
 
 const productSchema = new mongoose.Schema(
   {
-    productCode: { type: String, required: true, unique: true, index: true },
+    productCode: { type: String, required: true, index: true },
     productName: { type: String, required: true, trim: true, index: true },
     productType: { type: String, enum: PRODUCT_TYPES, required: true, index: true },
     category: { type: String, trim: true, default: '', index: true },
@@ -45,5 +45,10 @@ productSchema.index({
   manufacturer: 'text',
   modelNumber: 'text',
 });
+
+productSchema.index({ companyId: 1, productCode: 1 }, { unique: true });
+
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+productSchema.plugin(tenantPlugin);
 
 module.exports = mongoose.model('Product', productSchema);

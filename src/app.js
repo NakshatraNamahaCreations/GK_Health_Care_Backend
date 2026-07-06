@@ -11,6 +11,7 @@ const logger = require('./config/logger');
 const routes = require('./routes');
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 const { mountSwagger } = require('./config/swagger');
+const { runWithStore } = require('./tenant/tenantContext');
 
 const app = express();
 
@@ -44,6 +45,10 @@ app.use(hpp());
 
 // Gzip compression
 app.use(compression());
+
+// Establish a per-request tenant store so the active company propagates to all
+// DB calls. `authenticate` fills in the companyId once the user is known.
+app.use((req, res, next) => runWithStore(() => next()));
 
 // Request logging
 app.use(

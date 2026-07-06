@@ -30,4 +30,7 @@ const expenseSchema = new mongoose.Schema(
 expenseSchema.index({ userId: 1, expenseDate: -1 });
 expenseSchema.index({ status: 1, expenseDate: -1 });
 
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+expenseSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('Expense', expenseSchema);

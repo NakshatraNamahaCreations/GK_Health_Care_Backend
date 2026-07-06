@@ -5,7 +5,7 @@ const { PHONE_IN, PINCODE_IN, EMAIL, GSTIN } = require('../../constants/regex');
 
 const customerSchema = new mongoose.Schema(
   {
-    customerCode: { type: String, required: true, unique: true, index: true },
+    customerCode: { type: String, required: true, index: true },
     customerName: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true, match: [PHONE_IN, 'Invalid phone'] },
     email: { type: String, trim: true, lowercase: true, match: [EMAIL, 'Invalid email'] },
@@ -50,5 +50,10 @@ customerSchema.index({
   email: 'text',
   customerCode: 'text',
 });
+
+customerSchema.index({ companyId: 1, customerCode: 1 }, { unique: true });
+
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+customerSchema.plugin(tenantPlugin);
 
 module.exports = mongoose.model('Customer', customerSchema);

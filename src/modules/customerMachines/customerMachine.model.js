@@ -48,10 +48,13 @@ const customerMachineSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Serial number should be unique when present.
+// Serial number should be unique per company when present.
 customerMachineSchema.index(
-  { serialNumber: 1 },
+  { companyId: 1, serialNumber: 1 },
   { unique: true, partialFilterExpression: { serialNumber: { $type: 'string', $ne: '' } } }
 );
+
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+customerMachineSchema.plugin(tenantPlugin);
 
 module.exports = mongoose.model('CustomerMachine', customerMachineSchema);

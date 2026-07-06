@@ -31,4 +31,7 @@ const paymentSchema = new mongoose.Schema(
 
 paymentSchema.index({ customerId: 1, paymentDate: -1 });
 
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+paymentSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('Payment', paymentSchema);

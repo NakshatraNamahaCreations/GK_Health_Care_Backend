@@ -43,4 +43,11 @@ router.patch(
   controller.updateStatus
 );
 
+router.delete(
+  '/:id',
+  checkPermission('quotations', 'write'),
+  validate({ params: schemas.idParam }),
+  controller.remove
+);
+
 module.exports = router;

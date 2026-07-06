@@ -7,7 +7,7 @@ const {
 
 const taskSchema = new mongoose.Schema(
   {
-    taskNumber: { type: String, required: true, unique: true, index: true },
+    taskNumber: { type: String, required: true, index: true },
     taskTitle: { type: String, required: true, trim: true },
     taskType: { type: String, enum: TASK_TYPES, required: true, index: true },
 
@@ -43,5 +43,10 @@ const taskSchema = new mongoose.Schema(
 );
 
 taskSchema.index({ taskNumber: 'text', taskTitle: 'text', description: 'text' });
+
+taskSchema.index({ companyId: 1, taskNumber: 1 }, { unique: true });
+
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+taskSchema.plugin(tenantPlugin);
 
 module.exports = mongoose.model('Task', taskSchema);

@@ -51,4 +51,7 @@ leadSchema.index({
   email: 'text',
 });
 
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+leadSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('Lead', leadSchema);

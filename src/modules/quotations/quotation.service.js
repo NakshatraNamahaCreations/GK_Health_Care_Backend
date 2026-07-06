@@ -5,6 +5,7 @@ const ApiError = require('../../utils/ApiError');
 const logger = require('../../config/logger');
 const { nextFlatNumber } = require('../../utils/reportNumber');
 const { calcQuotation } = require('../../services/quotationCalc');
+const orderService = require('../orders/order.service');
 const pdfService = require('../../services/pdfService');
 const s3 = require('../../services/s3Service');
 const {
@@ -190,8 +191,29 @@ async function setStatus(id, { status, remarks }, actor) {
   q.updatedBy = actor._id;
   await q.save();
 
+  // Accepting a quotation creates an order (idempotent — one order per quotation).
+  if (status === 'Accepted' && oldStatus !== 'Accepted') {
+    try {
+      await orderService.createFromQuotation(q, actor._id);
+    } catch (err) {
+      logger.error(`Order auto-create failed for ${q.quotationNumber}: ${err.message}`);
+    }
+  }
+
   audit('QUOTATION_STATUS_CHANGED', q._id, actor._id, { status: oldStatus }, { status });
   return q;
+}
+
+async function softDeleteQuotation(id, actor) {
+  const q = await Quotation.findOne({ _id: id, isDeleted: false });
+  if (!q) throw ApiError.notFound('Quotation not found');
+  q.isDeleted = true;
+  q.deletedAt = new Date();
+  q.deletedBy = actor._id;
+  q.updatedBy = actor._id;
+  await q.save();
+  audit('QUOTATION_DELETED', q._id, actor._id, null, null);
+  return { deleted: true };
 }
 
 module.exports = {
@@ -200,4 +222,5 @@ module.exports = {
   getQuotation,
   updateQuotation,
   setStatus,
+  softDeleteQuotation,
 };

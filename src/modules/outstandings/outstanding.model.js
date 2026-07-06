@@ -27,7 +27,10 @@ const outstandingSchema = new mongoose.Schema(
 );
 
 // One outstanding row per (customer, invoice).
-outstandingSchema.index({ customerId: 1, invoiceNumber: 1 }, { unique: true });
+outstandingSchema.index({ companyId: 1, customerId: 1, invoiceNumber: 1 }, { unique: true });
 outstandingSchema.index({ dueDate: 1, status: 1 });
+
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+outstandingSchema.plugin(tenantPlugin);
 
 module.exports = mongoose.model('Outstanding', outstandingSchema);

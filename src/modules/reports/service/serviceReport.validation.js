@@ -21,6 +21,7 @@ const sparePartLine = z.object({
 
 const create = z.object({
   reportDate: optionalDate,
+  orderId: objectId.optional(),
   customerId: objectId,
   customerMachineId: objectId,
   technicianId: objectId.optional(),

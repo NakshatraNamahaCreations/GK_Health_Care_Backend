@@ -22,4 +22,9 @@ const serviceReportSchema = new mongoose.Schema(
 
 serviceReportSchema.index({ customerId: 1, customerMachineId: 1, reportDate: -1 });
 
+serviceReportSchema.index({ companyId: 1, reportNumber: 1 }, { unique: true });
+
+const { tenantPlugin } = require('../../../tenant/tenantPlugin');
+serviceReportSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('ServiceReport', serviceReportSchema);

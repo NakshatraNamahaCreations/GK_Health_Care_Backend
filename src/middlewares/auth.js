@@ -5,6 +5,8 @@ const User = require('../modules/users/user.model');
 const Role = require('../modules/roles/role.model');
 const { USER_STATUS } = require('../constants/status');
 const { ROLE_STATUS } = require('../constants/status');
+const { setCompanyId } = require('../tenant/tenantContext');
+const { resolveActiveCompany } = require('../tenant/resolveActiveCompany');
 
 // Verifies the JWT, loads the user + role, and rejects inactive/blocked users
 // or inactive roles. Populates req.user (User doc) and req.role (Role doc).
@@ -33,6 +35,13 @@ async function authenticate(req, res, next) {
 
     req.user = user;
     req.role = user.roleId;
+
+    // Resolve the active company and pin it to the tenant context so all
+    // downstream DB calls are scoped to it.
+    const companyId = await resolveActiveCompany(req);
+    req.companyId = companyId;
+    setCompanyId(companyId);
+
     return next();
   } catch (err) {
     return next(err);

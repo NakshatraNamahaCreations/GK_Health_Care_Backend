@@ -27,4 +27,9 @@ const pmReportSchema = new mongoose.Schema(
 
 pmReportSchema.index({ customerId: 1, customerMachineId: 1, reportDate: -1 });
 
+pmReportSchema.index({ companyId: 1, reportNumber: 1 }, { unique: true });
+
+const { tenantPlugin } = require('../../../tenant/tenantPlugin');
+pmReportSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('PreventiveMaintenanceReport', pmReportSchema);

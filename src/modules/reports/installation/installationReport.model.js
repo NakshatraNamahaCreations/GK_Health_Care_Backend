@@ -20,4 +20,9 @@ const installationReportSchema = new mongoose.Schema(
 
 installationReportSchema.index({ customerId: 1, customerMachineId: 1, reportDate: -1 });
 
+installationReportSchema.index({ companyId: 1, reportNumber: 1 }, { unique: true });
+
+const { tenantPlugin } = require('../../../tenant/tenantPlugin');
+installationReportSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('InstallationReport', installationReportSchema);

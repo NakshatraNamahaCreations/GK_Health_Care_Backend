@@ -3,7 +3,7 @@ const { ROLE_STATUS, ROLE_STATUS_VALUES } = require('../../constants/status');
 
 const sparePartSchema = new mongoose.Schema(
   {
-    partCode: { type: String, required: true, unique: true, index: true },
+    partCode: { type: String, required: true, index: true },
     partName: { type: String, required: true, trim: true, index: true },
     compatibleMachine: { type: String, trim: true, default: '', index: true },
     category: { type: String, trim: true, default: '', index: true },
@@ -33,5 +33,10 @@ sparePartSchema.index({
   manufacturer: 'text',
   compatibleMachine: 'text',
 });
+
+sparePartSchema.index({ companyId: 1, partCode: 1 }, { unique: true });
+
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+sparePartSchema.plugin(tenantPlugin);
 
 module.exports = mongoose.model('SparePart', sparePartSchema);

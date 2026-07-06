@@ -27,6 +27,10 @@ const expenseCategoryRoutes = require('../modules/expenseCategories/expenseCateg
 const expenseRoutes = require('../modules/expenses/expense.routes');
 const notificationRoutes = require('../modules/notifications/notification.routes');
 const dashboardRoutes = require('../modules/dashboard/dashboard.routes');
+const companySettingsRoutes = require('../modules/companySettings/companySettings.routes');
+const companyRoutes = require('../modules/companies/company.routes');
+const orderRoutes = require('../modules/orders/order.routes');
+const orderDocumentRoutes = require('../modules/orderDocuments/orderDocument.routes');
 
 const router = express.Router();
 
@@ -54,6 +58,8 @@ router.use('/reports/incident', incidentReportRoutes);
 router.use('/reports', reportAggregateRoutes);
 
 router.use('/quotations', quotationRoutes);
+router.use('/orders', orderRoutes);
+router.use('/order-documents', orderDocumentRoutes);
 
 router.use('/payments', paymentRoutes);
 router.use('/outstandings', outstandingRoutes);
@@ -62,5 +68,7 @@ router.use('/expenses', expenseRoutes);
 
 router.use('/notifications', notificationRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/company-settings', companySettingsRoutes);
+router.use('/companies', companyRoutes);
 
 module.exports = router;

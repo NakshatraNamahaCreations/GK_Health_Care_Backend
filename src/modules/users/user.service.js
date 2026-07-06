@@ -2,6 +2,7 @@ const User = require('./user.model');
 const Role = require('../roles/role.model');
 const ApiError = require('../../utils/ApiError');
 const { auditLegacy: audit } = require('../../services/auditService');
+const { getCompanyId } = require('../../tenant/tenantContext');
 
 async function assertRoleExists(roleId) {
   const role = await Role.findById(roleId);
@@ -20,7 +21,21 @@ async function createUser(payload, actorId) {
     if (e) throw ApiError.conflict('Email already in use');
   }
 
-  const user = await User.create({ ...payload, createdBy: actorId, updatedBy: actorId });
+  // Default a new employee into the active company when none is specified.
+  const activeCompany = getCompanyId();
+  const companyIds =
+    payload.companyIds && payload.companyIds.length
+      ? payload.companyIds
+      : activeCompany
+      ? [activeCompany]
+      : [];
+
+  const user = await User.create({
+    ...payload,
+    companyIds,
+    createdBy: actorId,
+    updatedBy: actorId,
+  });
   audit('USER_CREATED', user._id, actorId, null, user.toJSON());
   return User.findById(user._id).populate('roleId');
 }
@@ -33,6 +48,11 @@ async function listUsers({ page, limit, search, roleId, status }) {
   }
   if (roleId) filter.roleId = roleId;
   if (status) filter.status = status;
+
+  // Scope the directory to the active company (users belong to companies via
+  // companyIds). Super admins see the currently-selected company's employees.
+  const cid = getCompanyId();
+  if (cid) filter.companyIds = cid;
 
   const skip = (page - 1) * limit;
   const [items, total] = await Promise.all([

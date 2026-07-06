@@ -17,6 +17,7 @@ const APP_MODULES = Object.freeze([
   { moduleKey: 'inspection_reports', moduleName: 'Inspection Reports' },
   { moduleKey: 'incident_reports', moduleName: 'Incident Reports' },
   { moduleKey: 'quotations', moduleName: 'Quotations' },
+  { moduleKey: 'orders', moduleName: 'Orders' },
   { moduleKey: 'payments', moduleName: 'Payments' },
   { moduleKey: 'outstandings', moduleName: 'Outstanding' },
   { moduleKey: 'expenses', moduleName: 'Expenses' },

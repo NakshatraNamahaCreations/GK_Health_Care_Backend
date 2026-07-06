@@ -33,6 +33,9 @@ const userSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    // Companies this employee belongs to. Empty for super admins (they access
+    // every company). An employee only ever sees data for these companies.
+    companyIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Company', index: true }],
     department: { type: String, trim: true, default: '' },
     designation: { type: String, trim: true, default: '' },
     profileImage: { type: String, default: '' },

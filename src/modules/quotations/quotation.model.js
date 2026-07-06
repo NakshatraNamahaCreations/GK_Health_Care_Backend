@@ -32,7 +32,7 @@ const quotationItemSchema = new mongoose.Schema(
 
 const quotationSchema = new mongoose.Schema(
   {
-    quotationNumber: { type: String, required: true, unique: true, index: true },
+    quotationNumber: { type: String, required: true, index: true },
     quotationDate: { type: Date, required: true, default: () => new Date() },
 
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true, index: true },
@@ -67,5 +67,10 @@ const quotationSchema = new mongoose.Schema(
 
 quotationSchema.index({ customerId: 1, quotationDate: -1 });
 quotationSchema.index({ quotationNumber: 'text', hospitalName: 'text' });
+
+quotationSchema.index({ companyId: 1, quotationNumber: 1 }, { unique: true });
+
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+quotationSchema.plugin(tenantPlugin);
 
 module.exports = mongoose.model('Quotation', quotationSchema);

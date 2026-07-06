@@ -1,4 +1,5 @@
 const ServiceReport = require('./serviceReport.model');
+const Order = require('../../orders/order.model');
 const ApiError = require('../../../utils/ApiError');
 const { nextReportNumber } = require('../../../utils/reportNumber');
 const {
@@ -33,6 +34,14 @@ async function createServiceReport(payload, actor) {
     createdBy: actor._id,
     updatedBy: actor._id,
   });
+
+  // Link the source order back to this report.
+  if (payload.orderId) {
+    await Order.updateOne(
+      { _id: payload.orderId, isDeleted: false },
+      { $set: { serviceReportId: report._id, updatedBy: actor._id } }
+    );
+  }
 
   await generateAndAttachPdf({
     report,

@@ -31,4 +31,7 @@ const customerContactSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+customerContactSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('CustomerContact', customerContactSchema);

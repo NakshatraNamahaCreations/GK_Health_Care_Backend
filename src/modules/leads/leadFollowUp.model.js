@@ -19,4 +19,7 @@ const leadFollowUpSchema = new mongoose.Schema(
 
 leadFollowUpSchema.index({ leadId: 1, followUpDate: -1 });
 
+const { tenantPlugin } = require('../../tenant/tenantPlugin');
+leadFollowUpSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('LeadFollowUp', leadFollowUpSchema);

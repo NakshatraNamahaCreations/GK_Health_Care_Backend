@@ -26,3 +26,8 @@ exports.updateStatus = asyncHandler(async (req, res) => {
   const q = await service.setStatus(req.params.id, req.body, req.user);
   return ApiResponse.ok(res, q, 'Quotation status updated');
 });
+
+exports.remove = asyncHandler(async (req, res) => {
+  const result = await service.softDeleteQuotation(req.params.id, req.user);
+  return ApiResponse.ok(res, result, 'Quotation deleted');
+});
