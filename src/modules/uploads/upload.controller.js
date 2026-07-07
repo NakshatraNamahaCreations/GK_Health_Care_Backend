@@ -15,3 +15,13 @@ exports.single = asyncHandler(async (req, res) => {
   const result = await service.uploadSingle(req.file, req.body.module);
   return ApiResponse.created(res, result, 'File uploaded');
 });
+
+// DELETE /api/v1/uploads — remove a previously uploaded asset by its public URL.
+exports.remove = asyncHandler(async (req, res) => {
+  const url = req.body && req.body.url;
+  if (!url || typeof url !== 'string') {
+    throw ApiError.badRequest('Field "url" is required');
+  }
+  const deleted = await service.removeByUrl(url);
+  return ApiResponse.ok(res, { deleted }, deleted ? 'File deleted' : 'Nothing to delete');
+});

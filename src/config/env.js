@@ -31,15 +31,10 @@ const env = {
 
   logLevel: process.env.LOG_LEVEL || 'info',
 
-  s3: {
-    region: process.env.S3_REGION || 'ap-south-1',
-    bucket: process.env.S3_BUCKET,
-    accessKeyId: process.env.S3_ACCESS_KEY_ID,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-    endpoint: process.env.S3_ENDPOINT, // optional — for R2 / Spaces / MinIO
-    publicBaseUrl: process.env.S3_PUBLIC_BASE_URL, // e.g. https://cdn.example.com
-    // When using an S3-compatible service that requires path-style addressing.
-    forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    apiSecret: process.env.CLOUDINARY_API_SECRET,
   },
 };
 

@@ -49,8 +49,6 @@ const quotationSchema = new mongoose.Schema(
     terms: { type: String, trim: true, default: '' },
     status: { type: String, enum: QUOTATION_STATUSES, default: 'Draft', index: true },
 
-    pdfUrl: { type: String, default: '' },
-
     sentAt: { type: Date },
     acceptedAt: { type: Date },
     rejectedAt: { type: Date },

@@ -14,6 +14,11 @@ const companySchema = new mongoose.Schema(
     stateName: { type: String, trim: true, default: '' },
     stateCode: { type: String, trim: true, default: '' },
     logoUrl: { type: String, trim: true, default: '' },
+    // Bank details — shown on printed quotations/invoices for payment.
+    bankName: { type: String, trim: true, default: '' },
+    accountNumber: { type: String, trim: true, default: '' },
+    branch: { type: String, trim: true, default: '' },
+    ifsc: { type: String, trim: true, default: '' },
     status: {
       type: String,
       enum: ROLE_STATUS_VALUES,

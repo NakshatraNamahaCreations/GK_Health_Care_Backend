@@ -13,6 +13,7 @@ const docItemSchema = new mongoose.Schema(
     hsnCode: { type: String, trim: true, default: '' },
     quantity: { type: Number, min: 0, default: 1 },
     rate: { type: Number, min: 0, default: 0 },
+    gstPercentage: { type: Number, min: 0, max: 100, default: 0 },
     amount: { type: Number, min: 0, default: 0 },
   },
   { _id: false }
@@ -35,9 +36,16 @@ const orderDocumentSchema = new mongoose.Schema(
     vendorName: { type: String, trim: true, default: '' },
     expectedDeliveryDate: { type: Date },
 
-    // Delivery Note specific
-    vehicleNumber: { type: String, trim: true, default: '' },
+    // Delivery Note specific — shown on the printout
+    dispatchedThrough: { type: String, trim: true, default: '' },
+    docketNumber: { type: String, trim: true, default: '' },
+    destination: { type: String, trim: true, default: '' },
+    vehicleNumber: { type: String, trim: true, default: '' }, // motor vehicle number
     receivedBy: { type: String, trim: true, default: '' },
+    // Internal reference — NOT printed
+    sentBy: { type: String, trim: true, default: '' },
+    approvedBy: { type: String, trim: true, default: '' },
+    packedBy: { type: String, trim: true, default: '' },
 
     items: { type: [docItemSchema], default: [] },
     notes: { type: String, trim: true, default: '' },

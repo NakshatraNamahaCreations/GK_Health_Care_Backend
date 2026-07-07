@@ -14,6 +14,10 @@ const create = z.object({
   stateName: z.string().max(100).optional(),
   stateCode: z.string().max(10).optional(),
   logoUrl: z.string().max(1000).optional(),
+  bankName: z.string().max(150).optional(),
+  accountNumber: z.string().max(50).optional(),
+  branch: z.string().max(150).optional(),
+  ifsc: z.string().max(20).optional(),
   status: z.enum(ROLE_STATUS_VALUES).optional(),
 });
 

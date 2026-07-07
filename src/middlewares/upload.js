@@ -16,6 +16,11 @@ const EXCEL_MIMES = [
   'application/vnd.ms-excel',
   'application/octet-stream', // some browsers send this for .xlsx
 ];
+const CSV_MIMES = [
+  'text/csv',
+  'application/csv',
+  'text/plain', // some browsers send this for .csv
+];
 
 // Module → allowed mimes for the generic /uploads/single endpoint.
 const UPLOAD_MODULE_MIMES = Object.freeze({
@@ -42,6 +47,14 @@ const excelUpload = multer({
   storage: memoryStorage,
   limits: { fileSize: MAX_EXCEL_BYTES },
   fileFilter: fileFilterByMime(EXCEL_MIMES),
+});
+
+// Spreadsheet uploader for data imports — accepts CSV and Excel. Used by
+// /customers/import (and any future name-based import endpoint).
+const spreadsheetUpload = multer({
+  storage: memoryStorage,
+  limits: { fileSize: MAX_EXCEL_BYTES },
+  fileFilter: fileFilterByMime([...CSV_MIMES, ...EXCEL_MIMES]),
 });
 
 // Generic uploader for /uploads/single. Accepts the union of allowed mimes; the
@@ -73,6 +86,7 @@ function assertAllowedForModule(file, moduleKey) {
 
 module.exports = {
   excelUpload,
+  spreadsheetUpload,
   genericUpload,
   assertAllowedForModule,
   UPLOAD_MODULE_MIMES,

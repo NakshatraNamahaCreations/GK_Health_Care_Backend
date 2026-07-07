@@ -1,7 +1,7 @@
-const s3 = require('../../services/s3Service');
+const storage = require('../../services/cloudinaryService');
 
 async function uploadSingle(file, moduleKey) {
-  return s3.putObject({
+  return storage.putObject({
     buffer: file.buffer,
     mimeType: file.mimetype,
     moduleKey,
@@ -9,4 +9,9 @@ async function uploadSingle(file, moduleKey) {
   });
 }
 
-module.exports = { uploadSingle };
+// Best-effort delete of a previously uploaded asset by its public URL.
+async function removeByUrl(url) {
+  return storage.deleteByUrl(url);
+}
+
+module.exports = { uploadSingle, removeByUrl };

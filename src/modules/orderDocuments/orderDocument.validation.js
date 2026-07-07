@@ -10,8 +10,21 @@ const item = z.object({
   hsnCode: z.string().max(20).optional(),
   quantity: z.coerce.number().nonnegative().default(1),
   rate: z.coerce.number().nonnegative().optional().default(0),
+  gstPercentage: z.coerce.number().min(0).max(100).optional().default(0),
   amount: z.coerce.number().nonnegative().optional(),
 });
+
+// Delivery-note fields (dispatch + internal reference).
+const deliveryFields = {
+  dispatchedThrough: z.string().max(200).optional(),
+  docketNumber: z.string().max(100).optional(),
+  destination: z.string().max(200).optional(),
+  vehicleNumber: z.string().max(60).optional(),
+  receivedBy: z.string().max(120).optional(),
+  sentBy: z.string().max(120).optional(),
+  approvedBy: z.string().max(120).optional(),
+  packedBy: z.string().max(120).optional(),
+};
 
 const create = z.object({
   orderId: objectId,
@@ -19,8 +32,7 @@ const create = z.object({
   docDate: optionalDate,
   vendorName: z.string().max(200).optional(),
   expectedDeliveryDate: optionalDate,
-  vehicleNumber: z.string().max(60).optional(),
-  receivedBy: z.string().max(120).optional(),
+  ...deliveryFields,
   items: z.array(item).optional(),
   notes: z.string().max(4000).optional(),
   status: z.enum(OrderDocument.ORDER_DOC_STATUSES).optional(),
@@ -30,8 +42,7 @@ const update = z.object({
   docDate: optionalDate,
   vendorName: z.string().max(200).optional(),
   expectedDeliveryDate: optionalDate,
-  vehicleNumber: z.string().max(60).optional(),
-  receivedBy: z.string().max(120).optional(),
+  ...deliveryFields,
   items: z.array(item).optional(),
   notes: z.string().max(4000).optional(),
   status: z.enum(OrderDocument.ORDER_DOC_STATUSES).optional(),

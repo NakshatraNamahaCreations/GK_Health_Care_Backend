@@ -4,7 +4,6 @@ const ApiError = require('../../../utils/ApiError');
 const { nextReportNumber } = require('../../../utils/reportNumber');
 const {
   resolveContext,
-  generateAndAttachPdf,
   updateMachineFromReport,
 } = require('../shared/reportPipeline');
 
@@ -36,12 +35,6 @@ async function createInstallationReport(payload, actor) {
       { $set: { installationReportId: report._id, updatedBy: actor._id } }
     );
   }
-
-  await generateAndAttachPdf({
-    report,
-    template: 'installation-report',
-    context: ctx,
-  });
 
   // Side-effects on the machine: stamp installation dates, warranty, AMC, machine status.
   await updateMachineFromReport(

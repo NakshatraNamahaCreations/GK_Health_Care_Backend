@@ -10,6 +10,9 @@ const optionalUrl = z
   .url()
   .optional()
   .or(z.literal('').transform(() => undefined));
+// Signatures are mandatory on installation reports.
+const requiredCustomerSignature = z.string().url('Customer signature is required');
+const requiredTechnicianSignature = z.string().url('Technician signature is required');
 
 const create = z.object({
   reportDate: z.coerce.date().optional(),
@@ -26,8 +29,8 @@ const create = z.object({
   machineStatus: z.enum(MACHINE_STATUSES).optional(),
   engineerRemarks: z.string().max(2000).optional(),
 
-  customerSignatureUrl: optionalUrl,
-  technicianSignatureUrl: optionalUrl,
+  customerSignatureUrl: requiredCustomerSignature,
+  technicianSignatureUrl: requiredTechnicianSignature,
 
   status: z.enum(REPORT_STATUSES).optional(),
 });

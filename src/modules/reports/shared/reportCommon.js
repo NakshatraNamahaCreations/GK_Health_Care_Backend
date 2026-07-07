@@ -37,8 +37,6 @@ const commonReportFields = {
   customerSignatureUrl: { type: String, default: '' },
   technicianSignatureUrl: { type: String, default: '' },
 
-  pdfUrl: { type: String, default: '' },
-
   status: {
     type: String,
     enum: REPORT_STATUSES,

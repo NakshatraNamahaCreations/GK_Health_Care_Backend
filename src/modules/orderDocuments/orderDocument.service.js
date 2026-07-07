@@ -20,6 +20,7 @@ function normalizeItems(items) {
       hsnCode: (it.hsnCode || '').trim(),
       quantity,
       rate,
+      gstPercentage: Number(it.gstPercentage || 0),
       amount: it.amount !== undefined ? Number(it.amount) : quantity * rate,
     };
   });
@@ -42,8 +43,14 @@ async function createDocument(payload, actorId) {
     hospitalName: order.hospitalName,
     vendorName: payload.vendorName || '',
     expectedDeliveryDate: payload.expectedDeliveryDate,
+    dispatchedThrough: payload.dispatchedThrough || '',
+    docketNumber: payload.docketNumber || '',
+    destination: payload.destination || '',
     vehicleNumber: payload.vehicleNumber || '',
     receivedBy: payload.receivedBy || '',
+    sentBy: payload.sentBy || '',
+    approvedBy: payload.approvedBy || '',
+    packedBy: payload.packedBy || '',
     items: normalizeItems(payload.items),
     notes: payload.notes || '',
     status: payload.status || 'Draft',
@@ -70,10 +77,12 @@ async function listDocuments({ orderId, docType }) {
 }
 
 async function getDocument(id) {
-  const doc = await OrderDocument.findOne({ _id: id, isDeleted: false }).populate(
-    'orderId',
-    'orderNumber status'
-  );
+  const doc = await OrderDocument.findOne({ _id: id, isDeleted: false })
+    .populate('orderId', 'orderNumber status')
+    .populate(
+      'customerId',
+      'customerCode customerName hospitalName phone email gstin address stateName cityName pincode'
+    );
   if (!doc) throw ApiError.notFound('Document not found');
   return doc;
 }
@@ -86,8 +95,14 @@ async function updateDocument(id, payload, actorId) {
     'docDate',
     'vendorName',
     'expectedDeliveryDate',
+    'dispatchedThrough',
+    'docketNumber',
+    'destination',
     'vehicleNumber',
     'receivedBy',
+    'sentBy',
+    'approvedBy',
+    'packedBy',
     'notes',
     'status',
   ];

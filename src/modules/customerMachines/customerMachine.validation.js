@@ -14,6 +14,7 @@ const dateField = z.coerce.date().optional();
 const create = z.object({
   customerId: objectId,
   productId: objectId.optional(),
+  orderId: objectId.optional(),
   machineName: z.string().min(2).max(200),
   modelNumber: z.string().max(100).optional(),
   manufacturer: z.string().max(150).optional(),

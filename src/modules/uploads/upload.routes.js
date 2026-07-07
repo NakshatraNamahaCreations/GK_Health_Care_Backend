@@ -13,4 +13,8 @@ router.use(authenticate);
 //   module:  signatures|photos|profiles|bills|reports|imports|products
 router.post('/single', genericUpload.single('file'), controller.single);
 
+// DELETE /api/v1/uploads
+// body: { url: "<public asset url>" } — deletes the asset from storage.
+router.delete('/', controller.remove);
+
 module.exports = router;

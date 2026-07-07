@@ -11,6 +11,8 @@ const customerMachineSchema = new mongoose.Schema(
       index: true,
     },
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', index: true },
+    // Set when the machine was auto-registered from a sales order.
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', index: true },
 
     machineName: { type: String, required: true, trim: true },
     modelNumber: { type: String, trim: true, default: '' },

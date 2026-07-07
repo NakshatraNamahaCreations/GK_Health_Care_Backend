@@ -5,7 +5,6 @@ const { nextReportNumber } = require('../../../utils/reportNumber');
 const {
   resolveContext,
   enrichSpareParts,
-  generateAndAttachPdf,
   updateMachineFromReport,
 } = require('../shared/reportPipeline');
 
@@ -42,12 +41,6 @@ async function createServiceReport(payload, actor) {
       { $set: { serviceReportId: report._id, updatedBy: actor._id } }
     );
   }
-
-  await generateAndAttachPdf({
-    report,
-    template: 'service-report',
-    context: ctx,
-  });
 
   // Side-effects on the machine: last/next service dates + post-service status.
   await updateMachineFromReport(

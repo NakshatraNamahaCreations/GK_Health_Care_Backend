@@ -4,7 +4,6 @@ const { nextReportNumber } = require('../../../utils/reportNumber');
 const {
   resolveContext,
   enrichSpareParts,
-  generateAndAttachPdf,
 } = require('../shared/reportPipeline');
 
 const { auditLegacy: audit } = require('../../../services/auditService');
@@ -30,12 +29,6 @@ async function createInspectionReport(payload, actor) {
     ...ctx.denorm,
     createdBy: actor._id,
     updatedBy: actor._id,
-  });
-
-  await generateAndAttachPdf({
-    report,
-    template: 'inspection-report',
-    context: ctx,
   });
 
   // No machine side-effects — inspection observes condition without changing service dates.

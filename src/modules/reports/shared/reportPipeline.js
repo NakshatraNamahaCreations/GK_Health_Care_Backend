@@ -2,17 +2,14 @@
 //   1. resolve customer + machine + technician → denormalize names onto the report
 //   2. enrich sparePartsUsed lines with code/name/rate from the master record
 //   3. persist the report
-//   4. generate PDF, upload to S3, save pdfUrl (best effort)
-//   5. update CustomerMachine `lastServiceDate` / `nextServiceDueDate` / etc.
+//   4. update CustomerMachine `lastServiceDate` / `nextServiceDueDate` / etc.
+// Reports are rendered/printed on demand (client-side) — no PDF is stored.
 
 const ApiError = require('../../../utils/ApiError');
-const logger = require('../../../config/logger');
 const Customer = require('../../customers/customer.model');
 const CustomerMachine = require('../../customerMachines/customerMachine.model');
 const SparePart = require('../../spareParts/sparePart.model');
 const User = require('../../users/user.model');
-const pdfService = require('../../../services/pdfService');
-const s3 = require('../../../services/s3Service');
 
 async function resolveContext({ customerId, customerMachineId, technicianId }) {
   const customer = await Customer.findOne({ _id: customerId, isDeleted: false });
@@ -63,56 +60,6 @@ async function enrichSpareParts(lines = []) {
   });
 }
 
-// Build a Handlebars-friendly view model from a saved report doc.
-function buildPdfPayload({ report, customer, machine, technician }) {
-  return {
-    company: {
-      name: 'GK Health Care',
-      address: 'No 1, Main Road, Bengaluru, Karnataka 560001',
-    },
-    report: report.toObject({ virtuals: false }),
-    customer: customer.toObject({ virtuals: false }),
-    machine: machine.toObject({ virtuals: false }),
-    technician: {
-      _id: technician._id,
-      name: technician.name,
-      mobileNumber: technician.mobileNumber,
-      designation: technician.designation,
-    },
-    generatedAt: new Date(),
-  };
-}
-
-// Generates the PDF, pushes it to S3, sets report.pdfUrl. Best-effort:
-// failures are logged but never block the report creation.
-async function generateAndAttachPdf({ report, template, context }) {
-  if (!s3.isConfigured()) {
-    logger.warn(`PDF skipped — S3 not configured. Report ${report.reportNumber}`);
-    return null;
-  }
-  try {
-    const payload = buildPdfPayload({
-      report,
-      customer: context.customer,
-      machine: context.machine,
-      technician: context.technician,
-    });
-    const buffer = await pdfService.renderToPdf(template, payload);
-    const out = await s3.putObject({
-      buffer,
-      mimeType: 'application/pdf',
-      moduleKey: 'reports',
-      originalName: `${report.reportNumber}.pdf`,
-    });
-    report.pdfUrl = out.fileUrl;
-    await report.save();
-    return out;
-  } catch (err) {
-    logger.error(`PDF generation failed for ${report.reportNumber}: ${err.message}`);
-    return null;
-  }
-}
-
 // Applies post-report side-effects to the related CustomerMachine.
 // Each report kind passes its own set of fields to update.
 async function updateMachineFromReport(machineId, updates, actorId) {
@@ -123,6 +70,5 @@ async function updateMachineFromReport(machineId, updates, actorId) {
 module.exports = {
   resolveContext,
   enrichSpareParts,
-  generateAndAttachPdf,
   updateMachineFromReport,
 };

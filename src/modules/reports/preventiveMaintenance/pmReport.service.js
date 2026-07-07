@@ -4,7 +4,6 @@ const { nextReportNumber } = require('../../../utils/reportNumber');
 const {
   resolveContext,
   enrichSpareParts,
-  generateAndAttachPdf,
   updateMachineFromReport,
 } = require('../shared/reportPipeline');
 
@@ -31,12 +30,6 @@ async function createPmReport(payload, actor) {
     ...ctx.denorm,
     createdBy: actor._id,
     updatedBy: actor._id,
-  });
-
-  await generateAndAttachPdf({
-    report,
-    template: 'pm-report',
-    context: ctx,
   });
 
   // Side-effects on the machine: last/next service dates.

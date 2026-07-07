@@ -1,6 +1,39 @@
 const Order = require('./order.model');
+const CustomerMachine = require('../customerMachines/customerMachine.model');
 const ApiError = require('../../utils/ApiError');
 const { nextCode } = require('../../utils/codeGenerator');
+
+// Each Product line on the order is a machine the customer now owns, so we
+// register it under the customer straight away (serial number filled in later
+// at installation). Best-effort: a failure here must never block the order.
+async function registerMachinesFromOrder(order, actorId) {
+  try {
+    const productItems = (order.items || []).filter(
+      (it) => String(it.itemType || '').toLowerCase() === 'product'
+    );
+    for (const it of productItems) {
+      const units = Math.max(1, Number(it.quantity) || 1);
+      for (let i = 0; i < units; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await CustomerMachine.create({
+          customerId: order.customerId,
+          productId: it.itemId || undefined,
+          orderId: order._id,
+          machineName: it.name,
+          soldDate: order.orderDate,
+          machineStatus: 'Installed',
+          remarks: `Auto-registered from order ${order.orderNumber}`,
+          createdBy: actorId,
+          updatedBy: actorId,
+        });
+      }
+    }
+  } catch (err) {
+    // Log and move on — the order is already created and must stand.
+    // eslint-disable-next-line no-console
+    console.error('registerMachinesFromOrder failed:', err.message);
+  }
+}
 
 // Create an order from an accepted quotation. Idempotent — if an order already
 // exists for the quotation, it is returned unchanged.
@@ -27,7 +60,7 @@ async function createFromQuotation(quotation, actorId) {
     total: it.total || 0,
   }));
 
-  return Order.create({
+  const order = await Order.create({
     orderNumber,
     orderDate: new Date(),
     quotationId: quotation._id,
@@ -43,6 +76,12 @@ async function createFromQuotation(quotation, actorId) {
     createdBy: actorId,
     updatedBy: actorId,
   });
+
+  // Register the ordered machines under the customer (idempotent by virtue of
+  // order creation itself being idempotent — this runs only on first create).
+  await registerMachinesFromOrder(order, actorId);
+
+  return order;
 }
 
 async function listOrders({ page, limit, search, status, customerId }) {
@@ -72,7 +111,10 @@ async function listOrders({ page, limit, search, status, customerId }) {
 
 async function getOrder(id) {
   const order = await Order.findOne({ _id: id, isDeleted: false })
-    .populate('customerId', 'customerCode customerName hospitalName phone email gstin address')
+    .populate(
+      'customerId',
+      'customerCode customerName hospitalName phone email gstin address stateName cityName pincode'
+    )
     .populate('quotationId', 'quotationNumber status');
   if (!order) throw ApiError.notFound('Order not found');
   return order;

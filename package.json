@@ -12,20 +12,25 @@
   "engines": {
     "node": "22.x"
   },
-  "keywords": ["gk-health-care", "crm", "dialysis", "backend"],
+  "keywords": [
+    "gk-health-care",
+    "crm",
+    "dialysis",
+    "backend"
+  ],
   "author": "GK Health Care",
   "license": "UNLICENSED",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.620.0",
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.10.0",
     "compression": "^1.7.4",
-    "handlebars": "^4.7.8",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.4.0",
+    "handlebars": "^4.7.8",
     "helmet": "^7.1.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.2",

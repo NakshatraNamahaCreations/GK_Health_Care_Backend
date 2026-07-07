@@ -17,6 +17,8 @@ const MACHINE_SERVICE_TYPES = Object.freeze([
   'Warranty',
   'AMC',
   'Out of Warranty',
+  'CMC',
+  'Rental',
 ]);
 
 module.exports = { PRODUCT_TYPES, MACHINE_STATUSES, MACHINE_SERVICE_TYPES };

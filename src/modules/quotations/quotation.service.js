@@ -6,8 +6,6 @@ const logger = require('../../config/logger');
 const { nextFlatNumber } = require('../../utils/reportNumber');
 const { calcQuotation } = require('../../services/quotationCalc');
 const orderService = require('../orders/order.service');
-const pdfService = require('../../services/pdfService');
-const s3 = require('../../services/s3Service');
 const {
   QUOTATION_STATUSES,
   QUOTATION_TERMINAL_STATUSES,
@@ -30,36 +28,6 @@ async function resolveLead(leadId, customer) {
     throw ApiError.badRequest('Lead is already converted to a different customer');
   }
   return lead;
-}
-
-// PDF helper — same best-effort pattern as report PDFs.
-async function generateAndAttachPdf(quotation, customer) {
-  if (!s3.isConfigured()) {
-    logger.warn(`Quotation PDF skipped — S3 not configured. ${quotation.quotationNumber}`);
-    return;
-  }
-  try {
-    const payload = {
-      company: {
-        name: 'GK Health Care',
-        address: 'No 1, Main Road, Bengaluru, Karnataka 560001',
-      },
-      quotation: quotation.toObject({ virtuals: false }),
-      customer: customer.toObject({ virtuals: false }),
-      generatedAt: new Date(),
-    };
-    const buffer = await pdfService.renderToPdf('quotation', payload);
-    const out = await s3.putObject({
-      buffer,
-      mimeType: 'application/pdf',
-      moduleKey: 'reports',
-      originalName: `${quotation.quotationNumber}.pdf`,
-    });
-    quotation.pdfUrl = out.fileUrl;
-    await quotation.save();
-  } catch (err) {
-    logger.error(`Quotation PDF failed for ${quotation.quotationNumber}: ${err.message}`);
-  }
 }
 
 async function createQuotation(payload, actor) {
@@ -90,7 +58,6 @@ async function createQuotation(payload, actor) {
     updatedBy: actor._id,
   });
 
-  await generateAndAttachPdf(quotation, customer);
   audit('QUOTATION_CREATED', quotation._id, actor._id, null, quotation.toObject());
   return quotation;
 }
@@ -160,10 +127,6 @@ async function updateQuotation(id, payload, actor) {
   q.updatedBy = actor._id;
 
   await q.save();
-
-  // Regenerate PDF whenever anything that appears on it changes.
-  const customer = await Customer.findById(q.customerId);
-  await generateAndAttachPdf(q, customer);
 
   audit('QUOTATION_UPDATED', q._id, actor._id, null, q.toObject());
   return q;

@@ -1,7 +1,5 @@
 const asyncHandler = require('../../utils/asyncHandler');
-const ApiResponse = require('../../utils/ApiResponse');
 const pdfService = require('../../services/pdfService');
-const s3 = require('../../services/s3Service');
 
 // Default payload merged with whatever the caller passes — keeps the test endpoint
 // useful even with an empty body.
@@ -32,23 +30,14 @@ function buildDefaultData() {
   };
 }
 
+// Generates a PDF on the fly and streams it back — nothing is stored.
 exports.test = asyncHandler(async (req, res) => {
-  const { template, data, upload, filename } = req.body;
+  const { template, data, filename } = req.body;
 
   const payload = { ...buildDefaultData(), ...(data || {}) };
   const pdfBuffer = await pdfService.renderToPdf(template, payload);
 
   const outputName = (filename || `pdf-test-${Date.now()}`).replace(/[^a-zA-Z0-9._-]/g, '-') + '.pdf';
-
-  if (upload && s3.isConfigured()) {
-    const result = await s3.putObject({
-      buffer: pdfBuffer,
-      mimeType: 'application/pdf',
-      moduleKey: 'reports',
-      originalName: outputName,
-    });
-    return ApiResponse.ok(res, result, 'Sample PDF generated and uploaded');
-  }
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `inline; filename="${outputName}"`);

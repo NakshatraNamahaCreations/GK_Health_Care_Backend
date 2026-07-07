@@ -1,5 +1,6 @@
 const asyncHandler = require('../../utils/asyncHandler');
 const ApiResponse = require('../../utils/ApiResponse');
+const ApiError = require('../../utils/ApiError');
 const service = require('./customer.service');
 
 exports.create = asyncHandler(async (req, res) => {
@@ -25,4 +26,24 @@ exports.update = asyncHandler(async (req, res) => {
 exports.remove = asyncHandler(async (req, res) => {
   const data = await service.softDeleteCustomer(req.params.id, req.user._id);
   return ApiResponse.ok(res, data, 'Customer deleted');
+});
+
+exports.exportCsv = asyncHandler(async (req, res) => {
+  const csv = await service.exportCustomers(req.query);
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="customers.csv"');
+  return res.send('﻿' + csv); // BOM so Excel opens UTF-8 correctly
+});
+
+exports.importTemplate = asyncHandler(async (req, res) => {
+  const csv = service.importTemplateCsv();
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="customer-import-template.csv"');
+  return res.send(`﻿${csv}`);
+});
+
+exports.importFile = asyncHandler(async (req, res) => {
+  if (!req.file) throw ApiError.badRequest('A CSV or Excel file is required (form field "file")');
+  const result = await service.importCustomers(req.file, req.user._id);
+  return ApiResponse.ok(res, result, 'Import completed');
 });

@@ -4,7 +4,6 @@ const { nextReportNumber } = require('../../../utils/reportNumber');
 const {
   resolveContext,
   enrichSpareParts,
-  generateAndAttachPdf,
 } = require('../shared/reportPipeline');
 
 const { auditLegacy: audit } = require('../../../services/auditService');
@@ -30,12 +29,6 @@ async function createIncidentReport(payload, actor) {
     ...ctx.denorm,
     createdBy: actor._id,
     updatedBy: actor._id,
-  });
-
-  await generateAndAttachPdf({
-    report,
-    template: 'incident-report',
-    context: ctx,
   });
 
   // No automatic machine side-effects — incidents may or may not change the machine

@@ -60,7 +60,7 @@ async function listMachines(q) {
   const [items, total] = await Promise.all([
     CustomerMachine.find(filter)
       .populate('customerId', 'customerCode customerName hospitalName phone')
-      .populate('productId', 'productCode productName')
+      .populate('productId', 'productCode productName warrantyMonths')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -72,14 +72,14 @@ async function listMachines(q) {
 async function listByCustomer(customerId) {
   await assertCustomer(customerId);
   return CustomerMachine.find({ customerId, isDeleted: false })
-    .populate('productId', 'productCode productName')
+    .populate('productId', 'productCode productName warrantyMonths')
     .sort({ createdAt: -1 });
 }
 
 async function getMachine(id) {
   const machine = await CustomerMachine.findOne({ _id: id, isDeleted: false })
     .populate('customerId', 'customerCode customerName hospitalName phone')
-    .populate('productId', 'productCode productName');
+    .populate('productId', 'productCode productName warrantyMonths');
   if (!machine) throw ApiError.notFound('Customer machine not found');
   return machine;
 }

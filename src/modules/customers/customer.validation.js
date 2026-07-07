@@ -54,6 +54,24 @@ const update = z.object({
   status: statusEnum.optional(),
 });
 
+// One row of a CSV/Excel import. Location and owner arrive as human-readable
+// names (state/city/assignedTo) — the service resolves them to references.
+const importRow = z.object({
+  customerName: z.string().min(2).max(120),
+  phone: z.string().regex(PHONE_IN, 'Invalid phone'),
+  email: optionalEmail,
+  hospitalName: z.string().min(2).max(200),
+  gstin: optionalGstin,
+  address: z.string().max(500).optional(),
+  state: z.string().max(100).optional(),
+  city: z.string().max(100).optional(),
+  pincode: optionalPincode,
+  customerType: z.enum(CUSTOMER_TYPES),
+  assignedTo: z.string().max(120).optional(),
+  // Blank status cell → fall back to the model default rather than erroring.
+  status: statusEnum.optional().or(z.literal('').transform(() => undefined)),
+});
+
 const idParam = z.object({ id: objectId });
 
 const listQuery = z.object({
@@ -67,4 +85,4 @@ const listQuery = z.object({
   assignedTo: objectId.optional(),
 });
 
-module.exports = { create, update, idParam, listQuery };
+module.exports = { create, update, importRow, idParam, listQuery };
