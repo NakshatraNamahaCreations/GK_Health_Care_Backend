@@ -21,4 +21,23 @@ async function nextCode(key, prefix, pad = 5) {
   return `${prefix}-${String(n).padStart(pad, '0')}`;
 }
 
-module.exports = { nextSeq, nextCode };
+// Reserves a contiguous block of `count` codes in a single atomic increment —
+// far cheaper than calling nextCode() in a loop for bulk operations (imports).
+async function reserveCodes(key, prefix, count, pad = 5) {
+  if (count <= 0) return [];
+  const cid = getCompanyId();
+  const scopedKey = cid ? `${cid.toString()}:${key}` : key;
+  const doc = await Counter.findByIdAndUpdate(
+    scopedKey,
+    { $inc: { seq: count } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+  const start = doc.seq - count + 1; // block is [start .. doc.seq]
+  const codes = [];
+  for (let i = 0; i < count; i += 1) {
+    codes.push(`${prefix}-${String(start + i).padStart(pad, '0')}`);
+  }
+  return codes;
+}
+
+module.exports = { nextSeq, nextCode, reserveCodes };

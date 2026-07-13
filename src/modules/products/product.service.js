@@ -3,6 +3,7 @@ const ApiError = require('../../utils/ApiError');
 const { nextCode } = require('../../utils/codeGenerator');
 const { ROLE_STATUS } = require('../../constants/status');
 const { parseFirstSheet } = require('../../services/excelService');
+const { rowsFromCsv, toCsv } = require('../../utils/csv');
 const { create: createSchema } = require('./product.validation');
 
 async function createProduct(payload, actorId) {
@@ -66,22 +67,105 @@ async function softDeleteProduct(id, actorId) {
   return { deleted: true };
 }
 
-// Excel import skeleton.
-// Expected columns (case-sensitive, exact header names):
-//   productName, productType, category, manufacturer, modelNumber,
-//   description, price, gstPercentage, hsnCode, warrantyMonths
-async function importFromExcel(buffer, actorId) {
-  const { rows } = await parseFirstSheet(buffer);
+// ---------------------------------------------------------------------------
+// CSV / Excel import
+// ---------------------------------------------------------------------------
 
+// Canonical columns (also the template header order).
+const IMPORT_COLUMNS = [
+  'productName',
+  'productType',
+  'category',
+  'manufacturer',
+  'modelNumber',
+  'description',
+  'price',
+  'gstPercentage',
+  'hsnCode',
+  'warrantyMonths',
+  'status',
+];
+
+// Recognized header spellings → canonical key. Headers are normalized (lowercased,
+// non-alphanumerics stripped), so "Product Name", "GST %", "Model No." all map.
+const HEADER_ALIASES = {
+  productname: 'productName',
+  product: 'productName',
+  name: 'productName',
+  producttype: 'productType',
+  type: 'productType',
+  category: 'category',
+  cat: 'category',
+  manufacturer: 'manufacturer',
+  make: 'manufacturer',
+  brand: 'manufacturer',
+  modelnumber: 'modelNumber',
+  model: 'modelNumber',
+  modelno: 'modelNumber',
+  description: 'description',
+  desc: 'description',
+  price: 'price',
+  rate: 'price',
+  mrp: 'price',
+  amount: 'price',
+  gstpercentage: 'gstPercentage',
+  gst: 'gstPercentage',
+  gstpercent: 'gstPercentage',
+  tax: 'gstPercentage',
+  hsncode: 'hsnCode',
+  hsn: 'hsnCode',
+  hsnsac: 'hsnCode',
+  warrantymonths: 'warrantyMonths',
+  warranty: 'warrantyMonths',
+  warrantyperiod: 'warrantyMonths',
+  status: 'status',
+};
+
+function normalizeHeader(h) {
+  return String(h).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+// Map a raw sheet row (keyed by original headers) to canonical keys, trimming
+// strings and dropping empty cells so optional fields stay unset (an empty
+// string would otherwise coerce to 0 for numeric columns like price).
+function mapImportRow(data) {
+  const out = {};
+  for (const [rawKey, rawVal] of Object.entries(data)) {
+    const canon = HEADER_ALIASES[normalizeHeader(rawKey)];
+    if (!canon) continue;
+    let val = rawVal;
+    if (typeof val === 'string') val = val.trim();
+    if (val === '' || val === null || val === undefined) continue;
+    if (out[canon] === undefined) out[canon] = val;
+  }
+  return out;
+}
+
+async function parseImportFile(file) {
+  const name = (file.originalname || '').toLowerCase();
+  const isCsv =
+    file.mimetype === 'text/csv' ||
+    file.mimetype === 'application/csv' ||
+    name.endsWith('.csv');
+  if (isCsv) return rowsFromCsv(file.buffer.toString('utf8'));
+  return parseFirstSheet(file.buffer);
+}
+
+async function importProducts(file, actorId) {
+  const { rows } = await parseImportFile(file);
   const result = { total: rows.length, created: 0, skipped: 0, errors: [] };
 
   for (const { rowNumber, data } of rows) {
-    const parsed = createSchema.safeParse(data);
+    const mapped = mapImportRow(data);
+    const parsed = createSchema.safeParse(mapped);
     if (!parsed.success) {
       result.skipped += 1;
       result.errors.push({
         row: rowNumber,
-        errors: parsed.error.errors.map((e) => ({ path: e.path.join('.'), message: e.message })),
+        errors: parsed.error.errors.map((e) => ({
+          path: e.path.join('.'),
+          message: e.message,
+        })),
       });
       continue;
     }
@@ -97,11 +181,30 @@ async function importFromExcel(buffer, actorId) {
   return result;
 }
 
+// A ready-to-fill CSV template: canonical headers + one example row.
+function importTemplateCsv() {
+  const example = [
+    'Fresenius Dialysis Machine 4008S NG', // productName
+    'Dialysis Machine', // productType
+    'Hemodialysis', // category
+    'Fresenius Medical Care', // manufacturer
+    '4008S NG', // modelNumber
+    'Next-gen hemodialysis machine', // description
+    '375000', // price
+    '5', // gstPercentage
+    '9018', // hsnCode
+    '24', // warrantyMonths
+    'Active', // status
+  ];
+  return toCsv(IMPORT_COLUMNS, [example]);
+}
+
 module.exports = {
   createProduct,
   listProducts,
   getProduct,
   updateProduct,
   softDeleteProduct,
-  importFromExcel,
+  importProducts,
+  importTemplateCsv,
 };

@@ -3,7 +3,7 @@ const State = require('../locations/state.model');
 const City = require('../locations/city.model');
 const User = require('../users/user.model');
 const ApiError = require('../../utils/ApiError');
-const { nextCode } = require('../../utils/codeGenerator');
+const { nextCode, reserveCodes } = require('../../utils/codeGenerator');
 const { ROLE_STATUS } = require('../../constants/status');
 const { auditLegacy: audit } = require('../../services/auditService');
 const { parseFirstSheet } = require('../../services/excelService');
@@ -201,22 +201,47 @@ function normalizeHeader(h) {
 }
 
 // Map a raw sheet row (keyed by original headers) to canonical keys.
+// Excel cells typed as numbers (phones, pincodes) are coerced to strings so
+// they validate the same as CSV input.
 function mapImportRow(data) {
   const out = {};
   for (const [rawKey, rawVal] of Object.entries(data)) {
     const canon = HEADER_ALIASES[normalizeHeader(rawKey)];
     if (!canon) continue;
-    const val = typeof rawVal === 'string' ? rawVal.trim() : rawVal;
+    let val = rawVal;
+    if (typeof val === 'number') val = String(val);
+    else if (typeof val === 'string') val = val.trim();
     if (out[canon] === undefined || out[canon] === '') out[canon] = val;
   }
   return out;
 }
 
-// Turn validated names into a createCustomer payload. State/city/owner are
-// matched case-insensitively; unmatched-but-present names are kept as plain
-// text (the schema allows denormalized stateName/cityName) rather than failing.
-async function resolveImportPayload(row) {
-  const payload = {
+async function parseImportFile(file) {
+  const name = (file.originalname || '').toLowerCase();
+  const isCsv =
+    file.mimetype === 'text/csv' ||
+    file.mimetype === 'application/csv' ||
+    name.endsWith('.csv');
+  if (isCsv) return rowsFromCsv(file.buffer.toString('utf8'));
+  return parseFirstSheet(file.buffer);
+}
+
+// Normalizers for duplicate detection — digits-only phone + collapsed lowercase
+// name make the match resilient to formatting/whitespace/case differences.
+function normPhone(p) {
+  return String(p || '').replace(/\D/g, '');
+}
+function normName(s) {
+  return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+function dedupKey(hospitalName, phone) {
+  return `${normName(hospitalName)}|${normPhone(phone)}`;
+}
+
+// Build a customer doc from a validated import row using in-memory lookup maps
+// (no per-row DB queries). Mirrors resolveImportPayload's matching rules.
+function buildImportDoc(row, maps) {
+  const doc = {
     customerName: row.customerName,
     phone: row.phone,
     email: row.email || undefined,
@@ -230,49 +255,87 @@ async function resolveImportPayload(row) {
 
   let stateDoc = null;
   if (row.state) {
-    stateDoc = await State.findOne({ name: new RegExp(`^${escapeRegex(row.state)}$`, 'i') });
-    if (stateDoc) payload.stateId = stateDoc._id;
-    else payload.stateName = row.state; // keep raw name; no reference
+    stateDoc = maps.stateByName.get(normName(row.state)) || null;
+    if (stateDoc) {
+      doc.stateId = stateDoc._id;
+      doc.stateName = stateDoc.name;
+    } else {
+      doc.stateName = row.state; // keep raw name; no reference
+    }
   }
 
   if (row.city) {
-    const cityQuery = { name: new RegExp(`^${escapeRegex(row.city)}$`, 'i') };
-    if (stateDoc) cityQuery.stateId = stateDoc._id;
-    const cityDoc = await City.findOne(cityQuery);
-    if (cityDoc) payload.cityId = cityDoc._id;
-    else payload.cityName = row.city;
+    const candidates = maps.cityByName.get(normName(row.city)) || [];
+    let cityDoc = null;
+    if (stateDoc) {
+      cityDoc = candidates.find((c) => String(c.stateId) === String(stateDoc._id)) || null;
+    } else {
+      cityDoc = candidates[0] || null;
+    }
+    if (cityDoc) {
+      doc.cityId = cityDoc._id;
+      doc.cityName = cityDoc.name;
+      if (!doc.stateId && cityDoc.stateId) {
+        doc.stateId = cityDoc.stateId;
+        doc.stateName = cityDoc.stateName;
+      }
+    } else {
+      doc.cityName = row.city;
+    }
   }
 
   if (row.assignedTo) {
     const term = row.assignedTo;
-    const userDoc = await User.findOne({
-      $or: [
-        { name: new RegExp(`^${escapeRegex(term)}$`, 'i') },
-        { email: term.toLowerCase() },
-        { mobileNumber: term },
-      ],
-    });
-    if (userDoc) payload.assignedTo = userDoc._id;
-    // Unmatched owner → leave unassigned (not fatal).
+    const uid =
+      maps.userLookup.get(normName(term)) ||
+      maps.userLookup.get(term.toLowerCase()) ||
+      maps.userLookup.get(String(term));
+    if (uid) doc.assignedTo = uid;
   }
 
-  return payload;
-}
-
-async function parseImportFile(file) {
-  const name = (file.originalname || '').toLowerCase();
-  const isCsv =
-    file.mimetype === 'text/csv' ||
-    file.mimetype === 'application/csv' ||
-    name.endsWith('.csv');
-  if (isCsv) return rowsFromCsv(file.buffer.toString('utf8'));
-  return parseFirstSheet(file.buffer);
+  return doc;
 }
 
 async function importCustomers(file, actorId) {
   const { rows } = await parseImportFile(file);
-  const result = { total: rows.length, created: 0, skipped: 0, errors: [] };
+  const result = {
+    total: rows.length,
+    created: 0,
+    skipped: 0,
+    duplicates: 0,
+    errors: [],
+  };
 
+  // Preload every lookup once instead of hitting the DB per row. States/cities
+  // are global reference data; users and existing customers are tenant-scoped.
+  const [states, cities, users, existing] = await Promise.all([
+    State.find({}).select('name').lean(),
+    City.find({}).select('name stateId stateName').lean(),
+    User.find({}).select('name email mobileNumber').lean(),
+    Customer.find({ isDeleted: false }).select('hospitalName phone').lean(),
+  ]);
+
+  const stateByName = new Map(states.map((s) => [normName(s.name), s]));
+  const cityByName = new Map();
+  for (const c of cities) {
+    const k = normName(c.name);
+    const arr = cityByName.get(k) || [];
+    arr.push(c);
+    cityByName.set(k, arr);
+  }
+  const userLookup = new Map();
+  for (const u of users) {
+    if (u.name) userLookup.set(normName(u.name), u._id);
+    if (u.email) userLookup.set(String(u.email).toLowerCase(), u._id);
+    if (u.mobileNumber) userLookup.set(String(u.mobileNumber), u._id);
+  }
+  const maps = { stateByName, cityByName, userLookup };
+
+  // Seed with existing customers so re-importing a file (or a retry after a
+  // timeout) skips records already in the DB instead of duplicating them.
+  const seen = new Set(existing.map((c) => dedupKey(c.hospitalName, c.phone)));
+
+  const toCreate = [];
   for (const { rowNumber, data } of rows) {
     const mapped = mapImportRow(data);
     const parsed = importRowSchema.safeParse(mapped);
@@ -287,15 +350,56 @@ async function importCustomers(file, actorId) {
       });
       continue;
     }
+    const row = parsed.data;
+    const key = dedupKey(row.hospitalName, row.phone);
+    if (seen.has(key)) {
+      // Already in the DB or earlier in this same file.
+      result.duplicates += 1;
+      continue;
+    }
+    seen.add(key);
+    toCreate.push({ rowNumber, doc: buildImportDoc(row, maps) });
+  }
+
+  if (toCreate.length) {
+    const codes = await reserveCodes('customer', 'CUST', toCreate.length);
+    const docs = toCreate.map((t, i) => ({
+      ...t.doc,
+      customerCode: codes[i],
+      createdBy: actorId,
+      updatedBy: actorId,
+    }));
     try {
-      const payload = await resolveImportPayload(parsed.data);
-      await createCustomer(payload, actorId);
-      result.created += 1;
+      const inserted = await Customer.insertMany(docs, { ordered: false });
+      result.created += inserted.length;
     } catch (err) {
-      result.skipped += 1;
-      result.errors.push({ row: rowNumber, errors: [{ message: err.message }] });
+      // ordered:false → valid docs still inserted; failures reported per index.
+      const insertedCount = Array.isArray(err.insertedDocs)
+        ? err.insertedDocs.length
+        : 0;
+      result.created += insertedCount;
+      const writeErrors = err.writeErrors || [];
+      for (const we of writeErrors) {
+        result.skipped += 1;
+        const idx = typeof we.index === 'number' ? we.index : -1;
+        result.errors.push({
+          row: idx >= 0 && toCreate[idx] ? toCreate[idx].rowNumber : undefined,
+          errors: [{ message: we.errmsg || we.err?.errmsg || 'Insert failed' }],
+        });
+      }
+      // Non-bulk error (e.g. validation before insert) with no writeErrors.
+      if (!writeErrors.length && !insertedCount) {
+        throw err;
+      }
     }
   }
+
+  audit('CUSTOMERS_IMPORTED', null, actorId, null, {
+    total: result.total,
+    created: result.created,
+    duplicates: result.duplicates,
+    skipped: result.skipped,
+  });
 
   return result;
 }
