@@ -13,6 +13,7 @@ async function registerMachinesFromOrder(order, actorId) {
     );
     for (const it of productItems) {
       const units = Math.max(1, Number(it.quantity) || 1);
+      const isRent = String(it.saleType || '').toLowerCase() === 'rent';
       for (let i = 0; i < units; i += 1) {
         // eslint-disable-next-line no-await-in-loop
         await CustomerMachine.create({
@@ -22,7 +23,11 @@ async function registerMachinesFromOrder(order, actorId) {
           machineName: it.name,
           soldDate: order.orderDate,
           machineStatus: 'Installed',
-          remarks: `Auto-registered from order ${order.orderNumber}`,
+          // Rented machines are tagged with the Rental service type.
+          serviceType: isRent ? 'Rental' : undefined,
+          remarks:
+            `Auto-registered from order ${order.orderNumber}` +
+            (isRent && it.rentMonths ? ` — Rental, ${it.rentMonths} months` : isRent ? ' — Rental' : ''),
           createdBy: actorId,
           updatedBy: actorId,
         });
@@ -53,6 +58,8 @@ async function createFromQuotation(quotation, actorId) {
     hsnCode: it.hsnCode || '',
     parts: (it.parts || []).map((p) => ({ name: p.name, quantity: p.quantity })),
     quantity: it.quantity,
+    saleType: it.saleType || 'Sale',
+    rentMonths: it.rentMonths,
     rate: it.rate,
     discount: it.discount || 0,
     gstPercentage: it.gstPercentage || 0,

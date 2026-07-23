@@ -20,6 +20,8 @@ const item = z.object({
   hsnCode: z.string().max(20).optional(),
   parts: z.array(itemPart).optional(),
   quantity: z.coerce.number().positive(),
+  saleType: z.enum(['Sale', 'Rent']).optional().default('Sale'),
+  rentMonths: z.coerce.number().int().positive().optional(),
   rate: z.coerce.number().nonnegative(),
   discount: z.coerce.number().nonnegative().optional().default(0),
   gstPercentage: z.coerce.number().min(0).max(100).optional().default(0),

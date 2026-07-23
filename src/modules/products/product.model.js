@@ -20,6 +20,8 @@ const productSchema = new mongoose.Schema(
     modelNumber: { type: String, trim: true, default: '' },
     description: { type: String, trim: true, default: '' },
     price: { type: Number, min: 0, default: 0 },
+    // Yearly rental price. Custom durations are pro-rated: rentPerYear / 12 × months.
+    rentPerYear: { type: Number, min: 0, default: 0 },
     gstPercentage: { type: Number, min: 0, max: 100, default: 0 },
     hsnCode: { type: String, trim: true, default: '' },
     warrantyMonths: { type: Number, min: 0, default: 0 },

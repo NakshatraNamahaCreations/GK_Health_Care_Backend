@@ -148,17 +148,55 @@ async function parseImportFile(file) {
 const normMachine = (s) =>
   String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
-async function importSpareParts(file, actorId) {
-  const { rows } = await parseImportFile(file);
-  const result = { total: rows.length, created: 0, skipped: 0, errors: [] };
+// What to do when an imported row matches an existing spare part:
+//   skip      — leave the existing record untouched (default)
+//   update    — apply only the columns present in the file
+//   overwrite — the row replaces the record; absent columns reset to defaults
+const DUPLICATE_MODES = ['skip', 'update', 'overwrite'];
 
-  // Preload product names once so a `compatibleMachine` value in the file lines
-  // up with a real product (case/space-insensitive); unmatched values are kept
-  // as free text, exactly like a manually-typed machine name.
-  const products = await Product.find({ isDeleted: { $ne: true } })
-    .select('productName')
-    .lean();
-  const productByName = new Map(products.map((p) => [normMachine(p.productName), p.productName]));
+// Defaults used by overwrite mode for importable columns missing from the row.
+// `status` is intentionally excluded — imports never flip Active/Inactive
+// unless the file explicitly says so.
+const IMPORT_FIELD_DEFAULTS = {
+  compatibleMachine: '',
+  category: '',
+  manufacturer: '',
+  rate: 0,
+  gstPercentage: 0,
+  stockQuantity: 0,
+  description: '',
+};
+
+// A spare part is identified by its name + the machine it fits.
+const dedupKeyOf = (partName, compatibleMachine) =>
+  `${normMachine(partName)}|${normMachine(compatibleMachine)}`;
+
+async function importSpareParts(file, actorId, duplicateMode = 'skip') {
+  const mode = DUPLICATE_MODES.includes(duplicateMode) ? duplicateMode : 'skip';
+  const { rows } = await parseImportFile(file);
+  const result = {
+    total: rows.length,
+    created: 0,
+    updated: 0,
+    duplicates: 0,
+    skipped: 0,
+    errors: [],
+  };
+
+  // Preload once: product names (so `compatibleMachine` snaps to the exact
+  // catalogue name) and existing spare parts (duplicate detection).
+  const [products, existing] = await Promise.all([
+    Product.find({ isDeleted: { $ne: true } }).select('productName').lean(),
+    SparePart.find({ isDeleted: false })
+      .select('partName compatibleMachine')
+      .lean(),
+  ]);
+  const productByName = new Map(
+    products.map((p) => [normMachine(p.productName), p.productName])
+  );
+  const existingByKey = new Map(
+    existing.map((sp) => [dedupKeyOf(sp.partName, sp.compatibleMachine), sp._id])
+  );
 
   for (const { rowNumber, data } of rows) {
     const mapped = mapImportRow(data);
@@ -178,9 +216,33 @@ async function importSpareParts(file, actorId) {
       });
       continue;
     }
+
+    const row = parsed.data;
+    const key = dedupKeyOf(row.partName, row.compatibleMachine);
+    const existingId = existingByKey.get(key);
+
     try {
-      await createSparePart(parsed.data, actorId);
-      result.created += 1;
+      if (!existingId) {
+        const createdDoc = await createSparePart(row, actorId);
+        // Register the new record so a repeat of the same part later in the
+        // file follows the duplicate mode instead of creating another copy.
+        existingByKey.set(key, createdDoc._id);
+        result.created += 1;
+      } else if (mode === 'skip') {
+        result.duplicates += 1;
+      } else {
+        const set = { updatedBy: actorId };
+        for (const [k, v] of Object.entries(row)) {
+          if (v !== undefined) set[k] = v;
+        }
+        if (mode === 'overwrite') {
+          for (const [k, dflt] of Object.entries(IMPORT_FIELD_DEFAULTS)) {
+            if (set[k] === undefined) set[k] = dflt;
+          }
+        }
+        await SparePart.updateOne({ _id: existingId }, { $set: set });
+        result.updated += 1;
+      }
     } catch (err) {
       result.skipped += 1;
       result.errors.push({ row: rowNumber, errors: [{ message: err.message }] });

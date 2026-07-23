@@ -30,7 +30,8 @@ exports.remove = asyncHandler(async (req, res) => {
 
 exports.importFile = asyncHandler(async (req, res) => {
   if (!req.file) throw ApiError.badRequest('A CSV or Excel file is required (form field "file")');
-  const result = await service.importSpareParts(req.file, req.user._id);
+  const duplicateMode = (req.body && req.body.duplicateMode) || 'skip';
+  const result = await service.importSpareParts(req.file, req.user._id, duplicateMode);
   return ApiResponse.ok(res, result, 'Import completed');
 });
 

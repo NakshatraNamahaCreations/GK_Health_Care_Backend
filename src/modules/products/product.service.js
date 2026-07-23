@@ -80,6 +80,7 @@ const IMPORT_COLUMNS = [
   'modelNumber',
   'description',
   'price',
+  'rentPerYear',
   'gstPercentage',
   'hsnCode',
   'warrantyMonths',
@@ -108,6 +109,11 @@ const HEADER_ALIASES = {
   rate: 'price',
   mrp: 'price',
   amount: 'price',
+  rentperyear: 'rentPerYear',
+  rent: 'rentPerYear',
+  yearlyrent: 'rentPerYear',
+  annualrent: 'rentPerYear',
+  rentyear: 'rentPerYear',
   gstpercentage: 'gstPercentage',
   gst: 'gstPercentage',
   gstpercent: 'gstPercentage',
@@ -191,6 +197,7 @@ function importTemplateCsv() {
     '4008S NG', // modelNumber
     'Next-gen hemodialysis machine', // description
     '375000', // price
+    '120000', // rentPerYear
     '5', // gstPercentage
     '9018', // hsnCode
     '24', // warrantyMonths

@@ -21,6 +21,10 @@ const quotationItemSchema = new mongoose.Schema(
     // Snapshot of the product's parts (BOM) at the time of quoting.
     parts: { type: [quotationItemPartSchema], default: [] },
     quantity: { type: Number, required: true, min: 0 },
+    // Sale (default) or Rent. Rented lines carry the duration; the rate holds
+    // the pro-rated rental amount (product.rentPerYear / 12 × rentMonths).
+    saleType: { type: String, enum: ['Sale', 'Rent'], default: 'Sale' },
+    rentMonths: { type: Number, min: 1 },
     rate: { type: Number, required: true, min: 0 },
     discount: { type: Number, default: 0, min: 0 },
     gstPercentage: { type: Number, default: 0, min: 0, max: 100 },

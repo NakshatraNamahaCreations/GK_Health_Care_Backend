@@ -20,6 +20,7 @@ const create = z.object({
   modelNumber: z.string().max(100).optional(),
   description: z.string().max(2000).optional(),
   price: z.coerce.number().nonnegative().optional(),
+  rentPerYear: z.coerce.number().nonnegative().optional(),
   gstPercentage: z.coerce.number().min(0).max(100).optional(),
   hsnCode: z.string().max(20).optional(),
   warrantyMonths: z.coerce.number().int().min(0).optional(),

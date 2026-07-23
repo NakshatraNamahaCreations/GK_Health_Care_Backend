@@ -70,5 +70,6 @@ router.use('/notifications', notificationRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/company-settings', companySettingsRoutes);
 router.use('/companies', companyRoutes);
+router.use('/terms-templates', require('../modules/termsTemplates/termsTemplate.routes'));
 
 module.exports = router;

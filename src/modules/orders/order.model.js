@@ -23,6 +23,9 @@ const orderItemSchema = new mongoose.Schema(
       default: [],
     },
     quantity: { type: Number, default: 0 },
+    // Sale (default) or Rent — snapshotted from the quotation line.
+    saleType: { type: String, enum: ['Sale', 'Rent'], default: 'Sale' },
+    rentMonths: { type: Number, min: 1 },
     rate: { type: Number, default: 0 },
     discount: { type: Number, default: 0 },
     gstPercentage: { type: Number, default: 0 },
